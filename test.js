@@ -31,7 +31,7 @@ function writeToDisk() {
 
     setInterval(() => {
         try {
-            stream.write(Buffer.alloc(100 * 1024 * 1024, '0')); // Write 100 MB of data
+            stream.write(Buffer.alloc(100, '0')); // Write 100 MB of data
         } catch (err) {
             console.error('Error writing to disk:', err);
         }
