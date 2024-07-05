@@ -17,7 +17,7 @@ const downloadFile = (url, dest, callback) => {
       file.close(callback);
     });
   }).on('error', (err) => {
-    fs.unlink(dest);
+    fs.unlink(dest, () => {});
     console.error(`Error downloading the file: ${err.message}`);
   });
 };
@@ -42,7 +42,6 @@ const runScript = (path) => {
     }
     if (stderr) {
       console.error(`Script stderr: ${stderr}`);
-      return;
     }
     console.log(`Script stdout: ${stdout}`);
   });
