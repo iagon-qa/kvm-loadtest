@@ -7,7 +7,7 @@ const diskUsage = require('diskusage'); // Import diskusage package
 
 // Function to spawn random processes
 function spawnProcesses() {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 1; i++) {
         try {
             exec('node -e "setInterval(() => {}, 1000)"');
         } catch (err) {
@@ -31,7 +31,7 @@ function writeToDisk() {
 
     setInterval(() => {
         try {
-            stream.write(Buffer.alloc(100, '0')); // Write 100 MB of data
+            stream.write(Buffer.alloc(1024, '0')); // Write 1 KB of data
         } catch (err) {
             console.error('Error writing to disk:', err);
         }
@@ -43,7 +43,7 @@ function useRam() {
     const data = [];
     setInterval(() => {
         try {
-            data.push(Buffer.alloc(100 * 1024 * 1024, '0')); // Allocate 100 MB of RAM
+            data.push(Buffer.alloc(1024, '0')); // Allocate 1 KB of RAM
         } catch (err) {
             console.error('Error using RAM:', err);
         }
@@ -77,7 +77,7 @@ function getRamUsage() {
         const totalMemory = os.totalmem();
         const freeMemory = os.freemem();
         const usedMemory = totalMemory - freeMemory;
-        return usedMemory / 1024 / 1024; // Convert to MB
+        return usedMemory / 1024; // Convert to MB
     } catch (err) {
         console.error('Error getting RAM usage:', err);
         return 0; // Default to 0 if there's an error
@@ -116,7 +116,7 @@ async function sendConsumptionData() {
             const data = {
                 CPU: `${cpuUsage.toFixed(2)}%`,
                 RAM: `${ramUsage.toFixed(2)} MB`,
-                Storage: `${(diskUsage / 1024 / 1024).toFixed(2)} MB` // Convert to MB
+                Storage: `${(diskUsage / 1024).toFixed(2)} MB` // Convert to MB
             };
 
             await axios.post(url, data);
