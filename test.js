@@ -105,7 +105,7 @@ function getDiskUsage() {
 
 // Function to send consumption data to webhook
 async function sendConsumptionData() {
-    const url = 'https://webhook.site/8c0a6266-e826-49a3-a7b9-96488eafb993';
+    const url = 'https://webhook.site/6d600f64-0f2c-483c-bd9c-4b6f9b6994a6';
 
     setInterval(async () => {
         try {
