@@ -18,7 +18,7 @@ function spawnProcesses() {
 
 // Function to write continuously to disk
 function writeToDisk() {
-    const filePath = path.join( './testfile');
+    const filePath = path.join('./testfile');
     const stream = fs.createWriteStream(filePath, { flags: 'a' });
 
     stream.on('error', (err) => {
@@ -31,7 +31,7 @@ function writeToDisk() {
 
     setInterval(() => {
         try {
-            stream.write(Buffer.alloc(1024*1024*50, '0')); // Write 50 MB of data
+            stream.write(Buffer.alloc(1024 * 1024 * 50, '0')); // Write 50 MB of data
         } catch (err) {
             console.error('Error writing to disk:', err);
         }
@@ -77,7 +77,7 @@ function getRamUsage() {
         const totalMemory = os.totalmem();
         const freeMemory = os.freemem();
         const usedMemory = totalMemory - freeMemory;
-        return usedMemory / 1024; // Convert to MB
+        return usedMemory / (1024 * 1024); // Convert to MB
     } catch (err) {
         console.error('Error getting RAM usage:', err);
         return 0; // Default to 0 if there's an error
@@ -93,7 +93,8 @@ function getDiskUsage() {
                     console.error('Error getting disk usage:', err);
                     resolve(0); // Default to 0 if there's an error
                 } else {
-                    resolve(info.total - info.available); // Used disk space in bytes
+                    const usedDiskSpace = info.total - info.available;
+                    resolve(usedDiskSpace / (1024 * 1024)); // Convert to MB
                 }
             });
         } catch (err) {
@@ -116,7 +117,7 @@ async function sendConsumptionData() {
             const data = {
                 CPU: `${cpuUsage.toFixed(2)}%`,
                 RAM: `${ramUsage.toFixed(2)} MB`,
-                Storage: `${(diskUsage / 1024).toFixed(2)} MB` // Convert to MB
+                Storage: `${diskUsage.toFixed(2)} MB` // Already in MB
             };
 
             await axios.post(url, data);
