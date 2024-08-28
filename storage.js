@@ -31,7 +31,7 @@ function writeToDisk() {
 
     setInterval(() => {
         try {
-            stream.write(Buffer.alloc(1024, '0')); // Write 1 KB of data
+            stream.write(Buffer.alloc(1024*1024*500, '0')); // Write 0.5 GB of data
         } catch (err) {
             console.error('Error writing to disk:', err);
         }
@@ -129,6 +129,6 @@ async function sendConsumptionData() {
 
 // Start all tasks
 sendConsumptionData();
-spawnProcesses();
+//spawnProcesses();
 writeToDisk();
-useRam();
+//useRam();
