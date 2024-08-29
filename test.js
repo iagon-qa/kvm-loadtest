@@ -5,20 +5,18 @@ const os = require('os');
 const axios = require('axios');
 const diskUsage = require('diskusage'); // Import diskusage package
 
-// Function to spawn random processes
-function spawnProcesses() {
-    for (let i = 0; i < 1; i++) {
-        try {
-            exec('node -e "setInterval(() => {}, 1000)"');
-        } catch (err) {
-            console.error('Error spawning process:', err);
-        }
+// Function to spawn a process that uses a small amount of CPU
+function spawnProcess() {
+    try {
+        exec('node -e "setInterval(() => {}, 1000)"');
+    } catch (err) {
+        console.error('Error spawning process:', err);
     }
 }
 
 // Function to write continuously to disk
-function writeToDisk() {
-    const filePath = path.join( './testfile');
+function writeToDisk(sizeMB) {
+    const filePath = path.join('./testfile');
     const stream = fs.createWriteStream(filePath, { flags: 'a' });
 
     stream.on('error', (err) => {
@@ -29,25 +27,29 @@ function writeToDisk() {
         }
     });
 
-    setInterval(() => {
-        try {
-            stream.write(Buffer.alloc(1024, '0')); // Write 1 KB of data
-        } catch (err) {
+    const bufferSize = sizeMB * 1024 * 1024; // Size in bytes
+    const buffer = Buffer.alloc(bufferSize, '0');
+
+    stream.write(buffer, (err) => {
+        if (err) {
             console.error('Error writing to disk:', err);
+        } else {
+            console.log(`${sizeMB} MB written to disk`);
         }
-    }, 1000);
+    });
 }
 
-// Function to use RAM continuously
-function useRam() {
+// Function to use RAM
+function useRam(sizeMB) {
     const data = [];
-    setInterval(() => {
-        try {
-            data.push(Buffer.alloc(1024, '0')); // Allocate 1 KB of RAM
-        } catch (err) {
-            console.error('Error using RAM:', err);
-        }
-    }, 1000);
+    const bufferSize = sizeMB * 1024 * 1024; // Size in bytes
+
+    try {
+        data.push(Buffer.alloc(bufferSize, '0')); // Allocate memory
+        console.log(`${sizeMB} MB RAM used`);
+    } catch (err) {
+        console.error('Error using RAM:', err);
+    }
 }
 
 // Function to get CPU usage
@@ -77,7 +79,7 @@ function getRamUsage() {
         const totalMemory = os.totalmem();
         const freeMemory = os.freemem();
         const usedMemory = totalMemory - freeMemory;
-        return usedMemory / 1024; // Convert to MB
+        return usedMemory / (1024 * 1024); // Convert to MB
     } catch (err) {
         console.error('Error getting RAM usage:', err);
         return 0; // Default to 0 if there's an error
@@ -93,7 +95,7 @@ function getDiskUsage() {
                     console.error('Error getting disk usage:', err);
                     resolve(0); // Default to 0 if there's an error
                 } else {
-                    resolve(info.total - info.available); // Used disk space in bytes
+                    resolve((info.total - info.available) / (1024 * 1024)); // Used disk space in MB
                 }
             });
         } catch (err) {
@@ -105,30 +107,39 @@ function getDiskUsage() {
 
 // Function to send consumption data to webhook
 async function sendConsumptionData() {
-    const url = 'https://webhook.site/0ffc91f5-d361-436e-a377-b52ab5ddc601';
+    const url = 'https://prickly-solstice-13.webhook.cool';
 
-    setInterval(async () => {
-        try {
-            const cpuUsage = await getCpuUsage();
-            const ramUsage = getRamUsage();
-            const diskUsage = await getDiskUsage();
+    try {
+        const cpuUsage = await getCpuUsage();
+        const ramUsage = getRamUsage();
+        const diskUsage = await getDiskUsage();
 
-            const data = {
-                CPU: `${cpuUsage.toFixed(2)}%`,
-                RAM: `${ramUsage.toFixed(2)} MB`,
-                Storage: `${(diskUsage / 1024).toFixed(2)} MB` // Convert to MB
-            };
+        const data = {
+            CPU: `${cpuUsage.toFixed(2)}%`,
+            RAM: `${ramUsage.toFixed(2)} MB`,
+            Storage: `${diskUsage.toFixed(2)} MB`
+        };
 
-            await axios.post(url, data);
-            console.log('Data sent successfully', data);
-        } catch (error) {
-            console.error('Error sending data:', error);
-        }
-    }, 30000);
+        await axios.post(url, data);
+        console.log('Data sent successfully', data);
+    } catch (error) {
+        console.error('Error sending data:', error);
+    }
 }
 
-// Start all tasks
-sendConsumptionData();
-spawnProcesses();
-writeToDisk();
-useRam();
+// Start all tasks in intervals
+function startTasks() {
+    let iteration = 1;
+
+    setInterval(() => {
+        const sizeMB = 50 * iteration;
+        spawnProcess();
+        useRam(sizeMB);
+        writeToDisk(sizeMB * 10);
+        sendConsumptionData();
+
+        iteration += 1;
+    }, 1800000); // 30 minutes interval
+}
+
+startTasks();
