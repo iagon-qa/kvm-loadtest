@@ -91,7 +91,7 @@ function getRamUsage() {
 function getDiskUsage() {
     return new Promise((resolve) => {
         try {
-            diskUsage.check('/', (err, info) => {
+            diskUsage.check('/home/compute/app', (err, info) => {
                 if (err) {
                     console.error('Error getting disk usage:', err);
                     resolve(0); // Default to 0 if there's an error
