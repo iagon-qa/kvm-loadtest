@@ -16,7 +16,8 @@ function spawnProcess() {
 
 // Function to write continuously to disk
 function writeToDisk(sizeMB) {
-    const filePath = path.join('./testfile');
+    const uniqueFileName = `testfile_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.txt`;
+    const filePath = path.join('./', uniqueFileName);
     const stream = fs.createWriteStream(filePath, { flags: 'a' });
 
     stream.on('error', (err) => {
@@ -34,7 +35,7 @@ function writeToDisk(sizeMB) {
         if (err) {
             console.error('Error writing to disk:', err);
         } else {
-            console.log(`${sizeMB} MB written to disk`);
+            console.log(`${sizeMB} MB written to disk in file ${uniqueFileName}`);
         }
     });
 }
